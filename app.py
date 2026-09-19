@@ -128,6 +128,7 @@ def main():
 	authentication_status = st.session_state.get("authentication_status")
 	if authentication_status:
 		authenticator.logout("Log out")
+		st.write("hello, ur logged in")
 		st.success(f"Welcome, {st.session_state['username']}!")
 		st.write("Your personal finance dashboard will appear here.")
 	elif st.session_state["auth_screen"] == "signup":

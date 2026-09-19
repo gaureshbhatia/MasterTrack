@@ -17,6 +17,15 @@ def initialize_database():
 			)
 			"""
 		)
+#-----------------TEST USER-----------------
+		if connection.execute("SELECT 1 FROM users LIMIT 1").fetchone() is None:
+			test_username = "test"
+			test_password = "password"
+			test_password_hash = stauth.Hasher.hash(test_password)
+			connection.execute(
+				"INSERT INTO users (username, password_hash) VALUES (?, ?)",
+				(test_username, test_password_hash),
+			)
 
 def sign_up(username, password):
 	"""Hash and insert one user into the database."""
