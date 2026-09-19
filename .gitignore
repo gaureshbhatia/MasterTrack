@@ -1,0 +1,44 @@
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache and build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Local databases and SQL dumps
+*.db
+*.sqlite
+*.sqlite3
+*.sql.gz
+
+# Matplotlib and generated plots
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+
+# Keep project assets tracked
+!assets/
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!assets/**/*.svg
+!assets/**/*.pdf
+
+# Environment and editor files
+.env
+.env.*
+.DS_Store
+.idea/
+.vscode/
