@@ -1,11 +1,15 @@
 import secrets
-import sqlite3
 from pathlib import Path
 
 import streamlit as st
 import streamlit_authenticator as stauth
 
-from genkeys import DATABASE, initialize_database, sign_up
+from genkeys import (
+	DatabaseConnectionError,
+	get_database_connection,
+	initialize_database,
+	sign_up,
+)
 
 
 def ensure_cookie_key():
@@ -46,10 +50,13 @@ def ensure_cookie_key():
 
 def load_credentials():
 	"""Load stored password hashes in Streamlit Authenticator's format."""
-	with sqlite3.connect(DATABASE) as connection:
-		rows = connection.execute(
-			"SELECT username, password_hash FROM users ORDER BY username"
-		).fetchall()
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute("SELECT username, password_hash FROM users ORDER BY username")
+		rows = cursor.fetchall()
+	finally:
+		connection.close()
 
 	return {
 		"usernames": {
@@ -97,7 +104,7 @@ def show_signup_form():
 		else:
 			try:
 				sign_up(username, password)
-			except ValueError as error:
+			except (DatabaseConnectionError, ValueError) as error:
 				st.error(str(error))
 			else:
 				st.success("Account created. You can now log in.")
@@ -111,14 +118,25 @@ def show_signup_form():
 
 def main():
 	st.set_page_config(page_title="Personal Finance", page_icon="$")
-	initialize_database()
+
+	try:
+		initialize_database()
+		credentials = load_credentials()
+	except DatabaseConnectionError as error:
+		st.title("Welcome to Personal Finance")
+		st.error(str(error))
+		st.info(
+			"Install and start MySQL, create the personal_finance database, "
+			"then restart Streamlit."
+		)
+		st.stop()
 
 	st.title("Welcome to Personal Finance")
 	st.session_state.setdefault("auth_screen", "login")
 
 	cookie_key = ensure_cookie_key()
 	authenticator = stauth.Authenticate(
-		load_credentials(),
+		credentials,
 		cookie_name="personal_finance_auth",
 		cookie_key=cookie_key,
 		cookie_expiry_days=30,

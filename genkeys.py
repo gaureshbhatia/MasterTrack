@@ -1,44 +1,68 @@
 import getpass
-import sqlite3
 
+import mysql.connector
+import streamlit as st
 import streamlit_authenticator as stauth
 
-DATABASE = "users.db"
+
+class DatabaseConnectionError(RuntimeError):
+	"""Raised when the configured MySQL server cannot be reached."""
+
+
+def get_database_connection():
+	"""Open a connection using the MySQL settings in Streamlit secrets."""
+	try:
+		return mysql.connector.connect(**dict(st.secrets["mysql"]))
+	except mysql.connector.Error as error:
+		raise DatabaseConnectionError(
+			"Cannot connect to MySQL. Start the MySQL service and verify the "
+			"connection settings in .streamlit/secrets.toml."
+		) from error
+
 
 def initialize_database():
-	"""Create the credentials table if it dsnt exist."""
-	with sqlite3.connect(DATABASE) as connection:
-		connection.execute(
+	"""Create the credentials table and seed the test account if needed."""
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute(
 			"""
 			CREATE TABLE IF NOT EXISTS users (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				username TEXT NOT NULL UNIQUE,
-				password_hash TEXT NOT NULL
+				id INT AUTO_INCREMENT PRIMARY KEY,
+				username VARCHAR(255) NOT NULL UNIQUE,
+				password_hash VARCHAR(255) NOT NULL
 			)
 			"""
 		)
-#-----------------TEST USER-----------------
-		if connection.execute("SELECT 1 FROM users LIMIT 1").fetchone() is None:
+		cursor.execute("SELECT 1 FROM users LIMIT 1")
+		if cursor.fetchone() is None:
 			test_username = "test"
 			test_password = "password"
 			test_password_hash = stauth.Hasher.hash(test_password)
-			connection.execute(
-				"INSERT INTO users (username, password_hash) VALUES (?, ?)",
+			cursor.execute(
+				"INSERT INTO users (username, password_hash) VALUES (%s, %s)",
 				(test_username, test_password_hash),
 			)
+		connection.commit()
+	finally:
+		connection.close()
 
 def sign_up(username, password):
 	"""Hash and insert one user into the database."""
 	password_hash = stauth.Hasher.hash(password)
 
+	connection = get_database_connection()
 	try:
-		with sqlite3.connect(DATABASE) as connection:
-			connection.execute(
-				"INSERT INTO users (username, password_hash) VALUES (?, ?)",
-				(username, password_hash),
-			)
-	except sqlite3.IntegrityError as error:
+		cursor = connection.cursor()
+		cursor.execute(
+			"INSERT INTO users (username, password_hash) VALUES (%s, %s)",
+			(username, password_hash),
+		)
+		connection.commit()
+	except mysql.connector.IntegrityError as error:
 		raise ValueError(f"Username '{username}' already exists.") from error
+	finally:
+		connection.close()
 
 
 def collect_user_input():
