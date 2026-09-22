@@ -13,7 +13,7 @@ from genkeys import (
 
 
 def ensure_cookie_key():
-	"""Create and persist a cookie key in .streamlit/secrets.toml if needed."""
+	#Ensure that the auth_cookie_key is set in .streamlit/secrets.toml. If not, generate a new key and write it to the file.
 	secret_path = Path(".streamlit/secrets.toml")
 	secret_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -49,7 +49,7 @@ def ensure_cookie_key():
 
 
 def load_credentials():
-	"""Load stored password hashes in Streamlit Authenticator's format."""
+	#Load the credentials from the MySQL database so that authenticator can read them.
 	connection = get_database_connection()
 	try:
 		cursor = connection.cursor()
@@ -67,7 +67,7 @@ def load_credentials():
 
 
 def show_login_screen(authenticator):
-	"""Render the login screen and let users open the signup screen."""
+	#Render the login form and handle login attempts.
 	authenticator.login(fields={
 		"Form name": "Log in",
 		"Username": "Username",
@@ -85,7 +85,7 @@ def show_login_screen(authenticator):
 
 
 def show_signup_form():
-	"""Render the username/password signup form."""
+	#Render the sign-up form and handle account creation.
 	st.subheader("Sign up")
 	with st.form("signup_form", clear_on_submit=True):
 		username = st.text_input("Username", key="signup_username")

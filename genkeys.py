@@ -6,11 +6,12 @@ import streamlit_authenticator as stauth
 
 
 class DatabaseConnectionError(RuntimeError):
-	"""Raised when the configured MySQL server cannot be reached."""
+	pass
+	#if server not reached
 
 
 def get_database_connection():
-	"""Open a connection using the MySQL settings in Streamlit secrets."""
+	#connect to mysql database using credentials from .streamlit/secrets.toml
 	try:
 		return mysql.connector.connect(**dict(st.secrets["mysql"]))
 	except mysql.connector.Error as error:
@@ -21,7 +22,7 @@ def get_database_connection():
 
 
 def initialize_database():
-	"""Create the credentials table and seed the test account if needed."""
+	#Create the users table if it doesn't exist and insert a test user if the table is empty.
 	connection = get_database_connection()
 	try:
 		cursor = connection.cursor()
@@ -48,7 +49,7 @@ def initialize_database():
 		connection.close()
 
 def sign_up(username, password):
-	"""Hash and insert one user into the database."""
+	#Hash and insert one user into the database.
 	password_hash = stauth.Hasher.hash(password)
 
 	connection = get_database_connection()
@@ -66,7 +67,7 @@ def sign_up(username, password):
 
 
 def collect_user_input():
-	"""Ask for a username and confirm a password ,dont display it"""
+	#Ask for a username and confirm a password ,dont display the password
 	username = input("Username: ").strip()
 	if not username:
 		raise ValueError("Username cannot be empty.")
