@@ -1,4 +1,5 @@
 import secrets
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from genkeys import (
 	add_expense,
 	get_expense_categories,
 	get_database_connection,
+	get_current_month_expenses,
 	get_user_id,
 	initialize_database,
 	sign_up,
@@ -157,6 +159,39 @@ def show_expense_form(username):
 			st.success("Expense saved successfully.")
 
 
+def show_current_month_expenses(username):
+	#Use calendar-month boundaries rather than a rolling 30-day window.
+	now = datetime.now()
+	month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+	if month_start.month == 12:
+		next_month_start = month_start.replace(
+			year=month_start.year + 1, month=1
+		)
+	else:
+		next_month_start = month_start.replace(month=month_start.month + 1)
+
+	user_id = get_user_id(username)
+	expenses = get_current_month_expenses(
+		user_id, month_start, next_month_start
+	)
+	st.subheader(f"Spending for {now.strftime('%B %Y')}")
+
+	if not expenses:
+		st.info("No expenses recorded this month.")
+		return
+
+	st.table(
+		[
+			{	
+				"Amount (INR)": f"{amount_inr:.2f}",
+				"Category": category_name,
+				"Date": created_at.strftime("%Y-%m-%d %H:%M"),
+			}
+			for created_at, category_name, amount_inr in expenses
+		]
+	)
+
+
 def main():
 	st.set_page_config(page_title="Personal Finance", page_icon="$")
 
@@ -208,6 +243,7 @@ def main():
 
 		try:
 			show_expense_form(st.session_state["username"])
+			show_current_month_expenses(st.session_state["username"])
 		except DatabaseConnectionError as error:
 			st.error(str(error))
 	elif st.session_state["auth_screen"] == "signup":

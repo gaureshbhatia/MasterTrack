@@ -71,8 +71,9 @@ Users can sign up with a username and password from the login page. Successful
 logins are remembered for 30 days. After logging in, users can save positive
 INR expenses with up to two decimal places. Each expense stores the logged-in
 user ID and category ID, while the `expense_categories` table explains which
-category name each ID represents. Expense history and visualizations will be
-added later.
+category name each ID represents. The authenticated main page shows the
+user's expenses for the current calendar month; broader history and
+visualizations will be added later.
 
 The previous SQLite `users.db` file is no longer used, and its data is not
 migrated.

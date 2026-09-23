@@ -122,6 +122,28 @@ def add_expense(user_id, category_id, amount_inr):
 	finally:
 		connection.close()
 
+
+def get_current_month_expenses(user_id, month_start, next_month_start):
+	#Return only this user's expenses in the current calendar month.
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute(
+			"""
+			SELECT e.created_at, c.name, e.amount_inr
+			FROM expenses AS e
+			JOIN expense_categories AS c ON c.id = e.category_id
+			WHERE e.user_id = %s
+				AND e.created_at >= %s
+				AND e.created_at < %s
+			ORDER BY e.created_at DESC, e.id DESC
+			""",
+			(user_id, month_start, next_month_start),
+		)
+		return cursor.fetchall()
+	finally:
+		connection.close()
+
 def sign_up(username, password):
 	#Hash and insert one user into the database.
 	password_hash = stauth.Hasher.hash(password)
