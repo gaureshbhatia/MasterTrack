@@ -296,7 +296,7 @@ def main():
 		show_signup_form()
 	else:
 		show_login_screen(authenticator)
-
+	
 
 if __name__ == "__main__":
 	main()
