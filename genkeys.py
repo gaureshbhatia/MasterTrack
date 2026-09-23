@@ -89,7 +89,7 @@ def initialize_database():
 				id INT AUTO_INCREMENT PRIMARY KEY,
 				user_id INT NOT NULL,
 				category_id INT NOT NULL,
-				amount_inr DECIMAL(10, 2) NOT NULL,
+				amount DECIMAL(10, 2) NOT NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				CONSTRAINT fk_expenses_user
 					FOREIGN KEY (user_id) REFERENCES users(id),
@@ -138,17 +138,17 @@ def get_expense_categories():
 		connection.close()
 
 
-def add_expense(user_id, category_id, amount_inr):
+def add_expense(user_id, category_id, amount):
 	#Insert one expense using parameterized SQL and the authenticated user's ID.
 	connection = get_database_connection()
 	try:
 		cursor = connection.cursor()
 		cursor.execute(
 			"""
-			INSERT INTO expenses (user_id, category_id, amount_inr)
+			INSERT INTO expenses (user_id, category_id, amount)
 			VALUES (%s, %s, %s)
 			""",
-			(user_id, category_id, amount_inr),
+			(user_id, category_id, amount),
 		)
 		connection.commit()
 	finally:
@@ -162,7 +162,7 @@ def get_current_month_expenses(user_id, month_start, next_month_start):
 		cursor = connection.cursor()
 		cursor.execute(
 			"""
-			SELECT e.created_at, c.name, e.amount_inr
+			SELECT e.created_at, c.name, e.amount
 			FROM expenses AS e
 			JOIN expense_categories AS c ON c.id = e.category_id
 			WHERE e.user_id = %s

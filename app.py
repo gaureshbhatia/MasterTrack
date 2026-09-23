@@ -128,33 +128,33 @@ def show_expense_form(username):
 	#Render the initial save-only expense entry form.
 	st.subheader("Add an expense")
 	category_options = get_expense_categories()
-	category_names = {name: category_id for category_id, name in category_options}
+	categories = {name: category_id for category_id, name in category_options}
 
 	with st.form("expense_form", clear_on_submit=True):
 		amount_column, category_column = st.columns(2)
 		with amount_column:
 			amount_text = st.text_input("Amount (INR)", placeholder="0.00")
 		with category_column:
-			category_name = st.selectbox("Expense type", list(category_names))
+			category = st.selectbox("Expense type", list(categories))
 		submitted = st.form_submit_button("Save expense")
 
 	if submitted:
 		try:
-			amount_inr = Decimal(amount_text.strip())
+			amount = Decimal(amount_text.strip())
 		except (InvalidOperation, AttributeError):
 			st.error("Enter a valid INR amount, such as 125.50.")
 			return
 
-		if not amount_inr.is_finite() or amount_inr <= 0:
+		if not amount.is_finite() or amount <= 0:
 			st.error("The amount must be greater than zero.")
 			return
-		if amount_inr.as_tuple().exponent < -2:
+		if amount.as_tuple().exponent < -2:
 			st.error("Enter an amount with no more than two decimal places.")
 			return
 
 		try:
 			user_id = get_user_id(username)
-			add_expense(user_id, category_names[category_name], amount_inr)
+			add_expense(user_id, categories[category], amount)
 		except (DatabaseConnectionError, ValueError) as error:
 			st.error(str(error))
 		else:
@@ -175,8 +175,8 @@ def get_current_month_boundaries():
 
 def show_monthly_budget(username, month_start):
 	user_id = get_user_id(username)
-	budget_inr = get_current_month_budget(user_id, month_start)
-	if budget_inr == -1:
+	monthly_budget = get_current_month_budget(user_id, month_start)
+	if monthly_budget == -1:
 		prompt = "Would you like to set a budget for this month?"
 	else:
 		prompt = "Would you like to update the budget for this month?"
@@ -185,7 +185,7 @@ def show_monthly_budget(username, month_start):
 	with st.form("monthly_budget_form", clear_on_submit=True):
 		budget_text = st.text_input(
 			"Monthly budget (INR)",
-			value="" if budget_inr == -1 else f"{budget_inr:.2f}",
+			value="" if monthly_budget == -1 else f"{monthly_budget:.2f}",
 			placeholder="0.00",
 		)
 		submitted = st.form_submit_button("Save budget")
@@ -230,11 +230,11 @@ def show_current_month_expenses(username):
 	st.table(
 		[
 			{	
-				"Amount (INR)": f"{amount_inr:.2f}",
-				"Category": category_name,
+				"Amount (INR)": f"{amount:.2f}",
+				"Category": category,
 				"Date": created_at.strftime("%Y-%m-%d %H:%M"),
 			}
-			for created_at, category_name, amount_inr in expenses
+			for created_at, category, amount in expenses
 		]
 	)
 
