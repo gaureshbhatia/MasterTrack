@@ -98,6 +98,28 @@ def initialize_database():
 			)
 			"""
 		)
+		cursor.execute(
+			"""
+			SELECT COLUMN_NAME
+			FROM information_schema.COLUMNS
+			WHERE TABLE_SCHEMA = DATABASE()
+				AND TABLE_NAME = 'expenses'
+				AND COLUMN_NAME IN ('amount', 'amount_inr')
+			"""
+		)
+		expense_amount_columns = {row[0] for row in cursor.fetchall()}
+		if expense_amount_columns == {"amount_inr"}:
+			cursor.execute(
+				"""
+				ALTER TABLE expenses
+				CHANGE COLUMN amount_inr amount DECIMAL(10, 2) NOT NULL
+				"""
+			)
+		elif expense_amount_columns == {"amount", "amount_inr"}:
+			raise DatabaseConnectionError(
+				"The expenses table contains both amount and amount_inr columns. "
+				"Reconcile the duplicate columns before starting the app."
+			)
 		cursor.execute("SELECT 1 FROM users LIMIT 1")
 		if cursor.fetchone() is None:
 			test_username = "test"
