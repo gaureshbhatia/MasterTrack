@@ -185,9 +185,27 @@ def main():
 	)
 
 	authentication_status = st.session_state.get("authentication_status")
+
 	if authentication_status:
-		authenticator.logout("Log out")
+		st.markdown(
+			"""
+			<style>
+			[data-testid="stSidebar"],
+			[data-testid="stSidebarContent"],
+			[data-testid="stSidebarUserContent"] {
+				background: transparent;
+				box-shadow: none;
+			}
+			</style>
+			""",
+			unsafe_allow_html=True,
+		)
+
+		with st.sidebar:
+			authenticator.logout("Log out")
+
 		st.success(f"Welcome, {st.session_state['username']}!")
+
 		try:
 			show_expense_form(st.session_state["username"])
 		except DatabaseConnectionError as error:
