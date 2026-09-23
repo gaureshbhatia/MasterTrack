@@ -11,9 +11,11 @@ from genkeys import (
 	add_expense,
 	get_expense_categories,
 	get_database_connection,
+	get_current_month_budget,
 	get_current_month_expenses,
 	get_user_id,
 	initialize_database,
+	set_current_month_budget,
 	sign_up,
 )
 
@@ -159,8 +161,7 @@ def show_expense_form(username):
 			st.success("Expense saved successfully.")
 
 
-def show_current_month_expenses(username):
-	#Use calendar-month boundaries rather than a rolling 30-day window.
+def get_current_month_boundaries():
 	now = datetime.now()
 	month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 	if month_start.month == 12:
@@ -169,6 +170,52 @@ def show_current_month_expenses(username):
 		)
 	else:
 		next_month_start = month_start.replace(month=month_start.month + 1)
+	return now, month_start, next_month_start
+
+
+def show_monthly_budget(username, month_start):
+	user_id = get_user_id(username)
+	budget_inr = get_current_month_budget(user_id, month_start)
+	if budget_inr == -1:
+		prompt = "Would you like to set a budget for this month?"
+	else:
+		prompt = "Would you like to update the budget for this month?"
+
+	st.subheader(prompt)
+	with st.form("monthly_budget_form", clear_on_submit=True):
+		budget_text = st.text_input(
+			"Monthly budget (INR)",
+			value="" if budget_inr == -1 else f"{budget_inr:.2f}",
+			placeholder="0.00",
+		)
+		submitted = st.form_submit_button("Save budget")
+
+	if submitted:
+		try:
+			new_budget = Decimal(budget_text.strip())
+		except (InvalidOperation, AttributeError):
+			st.error("Enter a valid INR budget, such as 25000.00.")
+			return
+
+		if not new_budget.is_finite() or new_budget < 0:
+			st.error("The budget must be zero or greater.")
+			return
+		if new_budget.as_tuple().exponent < -2:
+			st.error("Enter a budget with no more than two decimal places.")
+			return
+
+		try:
+			set_current_month_budget(user_id, month_start, new_budget)
+		except DatabaseConnectionError as error:
+			st.error(str(error))
+		else:
+			st.success("Monthly budget saved successfully.")
+			st.rerun()
+
+
+def show_current_month_expenses(username):
+	#Use calendar-month boundaries rather than a rolling 30-day window.
+	now, month_start, next_month_start = get_current_month_boundaries()
 
 	user_id = get_user_id(username)
 	expenses = get_current_month_expenses(
@@ -238,10 +285,9 @@ def main():
 
 		with st.sidebar:
 			authenticator.logout("Log out")
-
-		st.success(f"Welcome, {st.session_state['username']}!")
-
 		try:
+			_, month_start, _ = get_current_month_boundaries()
+			show_monthly_budget(st.session_state["username"], month_start)
 			show_expense_form(st.session_state["username"])
 			show_current_month_expenses(st.session_state["username"])
 		except DatabaseConnectionError as error:

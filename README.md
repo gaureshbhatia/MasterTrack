@@ -75,5 +75,11 @@ category name each ID represents. The authenticated main page shows the
 user's expenses for the current calendar month; broader history and
 visualizations will be added later.
 
+Each user also has a separate monthly budget. A new calendar month starts
+with an unset budget represented internally by `-1`; the app asks whether to
+set a budget. A saved budget can be zero or greater and can be updated during
+the month. The month reset occurs when the user first opens the app in the
+new month, using the server's local date and time.
+
 The previous SQLite `users.db` file is no longer used, and its data is not
 migrated.

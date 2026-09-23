@@ -37,6 +37,38 @@ def initialize_database():
 		)
 		cursor.execute(
 			"""
+			SELECT COUNT(*)
+			FROM information_schema.COLUMNS
+			WHERE TABLE_SCHEMA = DATABASE()
+				AND TABLE_NAME = 'users'
+				AND COLUMN_NAME = 'monthly_budget_inr'
+			"""
+		)
+		if cursor.fetchone()[0] == 0:
+			cursor.execute(
+			"""
+			ALTER TABLE users
+			ADD COLUMN monthly_budget_inr DECIMAL(10, 2) NOT NULL DEFAULT -1.00
+			"""
+			)
+		cursor.execute(
+			"""
+			SELECT COUNT(*)
+			FROM information_schema.COLUMNS
+			WHERE TABLE_SCHEMA = DATABASE()
+				AND TABLE_NAME = 'users'
+				AND COLUMN_NAME = 'budget_month'
+			"""
+		)
+		if cursor.fetchone()[0] == 0:
+			cursor.execute(
+			"""
+			ALTER TABLE users
+			ADD COLUMN budget_month DATE NULL
+			"""
+			)
+		cursor.execute(
+			"""
 			CREATE TABLE IF NOT EXISTS expense_categories (
 				id INT PRIMARY KEY,
 				name VARCHAR(100) NOT NULL UNIQUE
@@ -141,6 +173,59 @@ def get_current_month_expenses(user_id, month_start, next_month_start):
 			(user_id, month_start, next_month_start),
 		)
 		return cursor.fetchall()
+	finally:
+		connection.close()
+
+
+def get_current_month_budget(user_id, month_start):
+	#Reset the budget lazily when the user first opens the app in a new month.
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute(
+			"""
+			SELECT monthly_budget_inr, budget_month
+			FROM users
+			WHERE id = %s
+			""",
+			(user_id,),
+		)
+		row = cursor.fetchone()
+		if row is None:
+			raise ValueError("The logged-in user could not be found.")
+
+		budget_inr, budget_month = row
+		current_month = month_start.date()
+		if budget_month != current_month:
+			budget_inr = -1
+			cursor.execute(
+				"""
+				UPDATE users
+				SET monthly_budget_inr = %s, budget_month = %s
+				WHERE id = %s
+				""",
+				(budget_inr, current_month, user_id),
+			)
+			connection.commit()
+		return budget_inr
+	finally:
+		connection.close()
+
+
+def set_current_month_budget(user_id, month_start, budget_inr):
+	#Save the budget for this user's current calendar month.
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute(
+			"""
+			UPDATE users
+			SET monthly_budget_inr = %s, budget_month = %s
+			WHERE id = %s
+			""",
+			(budget_inr, month_start.date(), user_id),
+		)
+		connection.commit()
 	finally:
 		connection.close()
 
