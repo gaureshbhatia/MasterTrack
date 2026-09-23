@@ -22,7 +22,7 @@ def get_database_connection():
 
 
 def initialize_database():
-	#Create the users table if it doesn't exist and insert a test user if the table is empty.
+	#Create the application tables and insert a test user if the users table is empty.
 	connection = get_database_connection()
 	try:
 		cursor = connection.cursor()
@@ -35,6 +35,37 @@ def initialize_database():
 			)
 			"""
 		)
+		cursor.execute(
+			"""
+			CREATE TABLE IF NOT EXISTS expense_categories (
+				id INT PRIMARY KEY,
+				name VARCHAR(100) NOT NULL UNIQUE
+			)
+			"""
+		)
+		cursor.executemany(
+			"""
+			INSERT INTO expense_categories (id, name)
+			VALUES (%s, %s)
+			ON DUPLICATE KEY UPDATE name = VALUES(name)
+			""",
+			[(1, "Type 1"), (2, "Type 2"), (3, "Type 3"), (4, "Type 4")],
+		)
+		cursor.execute(
+			"""
+			CREATE TABLE IF NOT EXISTS expenses (
+				id INT AUTO_INCREMENT PRIMARY KEY,
+				user_id INT NOT NULL,
+				category_id INT NOT NULL,
+				amount_inr DECIMAL(10, 2) NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				CONSTRAINT fk_expenses_user
+					FOREIGN KEY (user_id) REFERENCES users(id),
+				CONSTRAINT fk_expenses_category
+					FOREIGN KEY (category_id) REFERENCES expense_categories(id)
+			)
+			"""
+		)
 		cursor.execute("SELECT 1 FROM users LIMIT 1")
 		if cursor.fetchone() is None:
 			test_username = "test"
@@ -44,6 +75,49 @@ def initialize_database():
 				"INSERT INTO users (username, password_hash) VALUES (%s, %s)",
 				(test_username, test_password_hash),
 			)
+		connection.commit()
+	finally:
+		connection.close()
+
+
+def get_user_id(username):
+	#Resolve the authenticated username to its database ID for expense ownership.
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+		row = cursor.fetchone()
+	finally:
+		connection.close()
+
+	if row is None:
+		raise ValueError("The logged-in user could not be found.")
+	return row[0]
+
+
+def get_expense_categories():
+	#Load the category lookup values so the dropdown matches the database mapping.
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute("SELECT id, name FROM expense_categories ORDER BY id")
+		return cursor.fetchall()
+	finally:
+		connection.close()
+
+
+def add_expense(user_id, category_id, amount_inr):
+	#Insert one expense using parameterized SQL and the authenticated user's ID.
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute(
+			"""
+			INSERT INTO expenses (user_id, category_id, amount_inr)
+			VALUES (%s, %s, %s)
+			""",
+			(user_id, category_id, amount_inr),
+		)
 		connection.commit()
 	finally:
 		connection.close()

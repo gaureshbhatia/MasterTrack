@@ -1,4 +1,5 @@
 import secrets
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import streamlit as st
@@ -6,7 +7,10 @@ import streamlit_authenticator as stauth
 
 from genkeys import (
 	DatabaseConnectionError,
+	add_expense,
+	get_expense_categories,
 	get_database_connection,
+	get_user_id,
 	initialize_database,
 	sign_up,
 )
@@ -116,6 +120,43 @@ def show_signup_form():
 		st.rerun()
 
 
+def show_expense_form(username):
+	#Render the initial save-only expense entry form.
+	st.subheader("Add an expense")
+	category_options = get_expense_categories()
+	category_names = {name: category_id for category_id, name in category_options}
+
+	with st.form("expense_form", clear_on_submit=True):
+		amount_column, category_column = st.columns(2)
+		with amount_column:
+			amount_text = st.text_input("Amount (INR)", placeholder="0.00")
+		with category_column:
+			category_name = st.selectbox("Expense type", list(category_names))
+		submitted = st.form_submit_button("Save expense")
+
+	if submitted:
+		try:
+			amount_inr = Decimal(amount_text.strip())
+		except (InvalidOperation, AttributeError):
+			st.error("Enter a valid INR amount, such as 125.50.")
+			return
+
+		if not amount_inr.is_finite() or amount_inr <= 0:
+			st.error("The amount must be greater than zero.")
+			return
+		if amount_inr.as_tuple().exponent < -2:
+			st.error("Enter an amount with no more than two decimal places.")
+			return
+
+		try:
+			user_id = get_user_id(username)
+			add_expense(user_id, category_names[category_name], amount_inr)
+		except (DatabaseConnectionError, ValueError) as error:
+			st.error(str(error))
+		else:
+			st.success("Expense saved successfully.")
+
+
 def main():
 	st.set_page_config(page_title="Personal Finance", page_icon="$")
 
@@ -146,9 +187,11 @@ def main():
 	authentication_status = st.session_state.get("authentication_status")
 	if authentication_status:
 		authenticator.logout("Log out")
-		st.write("hello, ur logged in")
 		st.success(f"Welcome, {st.session_state['username']}!")
-		st.write("Your personal finance dashboard will appear here.")
+		try:
+			show_expense_form(st.session_state["username"])
+		except DatabaseConnectionError as error:
+			st.error(str(error))
 	elif st.session_state["auth_screen"] == "signup":
 		show_signup_form()
 	else:

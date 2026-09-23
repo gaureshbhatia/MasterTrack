@@ -56,9 +56,23 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app creates the MySQL `users` table automatically and seeds a `test` user
-with the password `password`. Users can sign up with a username and password
-from the login page. Successful logins are remembered for 30 days.
+The app creates the MySQL `users`, `expense_categories`, and `expenses` tables
+automatically. It seeds a `test` user with the password `password` and these
+stable expense category mappings:
+
+| Category ID | Category name |
+| --- | --- |
+| 1 | Type 1 |
+| 2 | Type 2 |
+| 3 | Type 3 |
+| 4 | Type 4 |
+
+Users can sign up with a username and password from the login page. Successful
+logins are remembered for 30 days. After logging in, users can save positive
+INR expenses with up to two decimal places. Each expense stores the logged-in
+user ID and category ID, while the `expense_categories` table explains which
+category name each ID represents. Expense history and visualizations will be
+added later.
 
 The previous SQLite `users.db` file is no longer used, and its data is not
 migrated.
