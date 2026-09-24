@@ -285,6 +285,8 @@ def main():
 
 		with st.sidebar:
 			authenticator.logout("Log out")
+		if not st.session_state.get("authentication_status"):
+			st.stop()
 		try:
 			_, month_start, _ = get_current_month_boundaries()
 			show_monthly_budget(st.session_state["username"], month_start)
