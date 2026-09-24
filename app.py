@@ -36,7 +36,7 @@ def ensure_cookie_key():
 					cookie_key = value.strip().strip('"').strip("'")
 					break
 
-	if not cookie_key or cookie_key in {"replace-with-a-long-random-secret", ""}:
+	if not cookie_key or cookie_key in {"replace-this", ""}:
 		cookie_key = secrets.token_urlsafe(32)
 		if secret_path.exists():
 			content = secret_path.read_text(encoding="utf-8")
@@ -165,7 +165,7 @@ def show_expense_form(username):
 
 def get_current_month_boundaries():
 	now = datetime.now()
-	month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+	month_start = now.replace(day=1, hour=0, minute=0)
 	if month_start.month == 12:
 		next_month_start = month_start.replace(
 			year=month_start.year + 1, month=1
