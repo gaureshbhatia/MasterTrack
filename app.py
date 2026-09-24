@@ -8,15 +8,17 @@ import streamlit_authenticator as stauth
 
 from genkeys import (
 	DatabaseConnectionError,
-	add_expense,
-	get_expense_categories,
 	get_database_connection,
+	sign_up,
+)
+from database import (
+	add_expense,
 	get_current_month_budget,
 	get_current_month_expenses,
+	get_expense_categories,
 	get_user_id,
 	initialize_database,
 	set_current_month_budget,
-	sign_up,
 )
 
 
@@ -154,7 +156,7 @@ def show_expense_form(username):
 
 		try:
 			user_id = get_user_id(username)
-			add_expense(user_id, categories[category], amount)
+			add_expense(user_id, amount, categories[category])
 		except (DatabaseConnectionError, ValueError) as error:
 			st.error(str(error))
 		else:

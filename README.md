@@ -21,9 +21,9 @@ streamlit run app.py
 ```
 
 The app creates a local SQLite `users.db` database with the `users`,
-`expense_categories`, and `expenses` tables automatically. It seeds a `test`
-user with the password `password` and these
-stable expense category mappings:
+`expense_categories`, `expenses`, and `budgets` tables automatically. Users
+are created from the signup form, and the database seeds these stable expense
+category mappings:
 
 | Category ID | Category name |
 | --- | --- |
@@ -48,5 +48,5 @@ new month, using the server's local date and time.
 
 The database file is local to the project and is ignored by Git. Delete
 `users.db` to reset all local users, expenses, and budgets; it will be recreated
-with the default schema and test user the next time the app starts. Existing
-MySQL data is not migrated.
+with the default schema the next time the app starts. Existing MySQL data is
+not migrated.
