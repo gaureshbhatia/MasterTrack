@@ -1,112 +1,103 @@
 from pathlib import Path
+
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 
 
 def generate_budget_loading_bar(
     total_expenses,
     monthly_budget,
-    output_path
+    output_folder,
 ):
-    """
-    Generate a budget usage loading bar.
-
-    Red portion = percentage of monthly budget spent.
-    Transparent portion = remaining budget.
-    """
+    """Create a transparent, bordered budget-usage bar and return its PNG path."""
 
     total_expenses = float(total_expenses)
     monthly_budget = float(monthly_budget)
 
-    # Calculate percentage of budget used
-    if monthly_budget > 0:
-        percentage_used = (
-            total_expenses / monthly_budget
-        ) * 100
-    else:
-        percentage_used = 0
+    # In database.py, -1 means that no budget has been set.
+    if monthly_budget <= 0:
+        return None
 
-    # The visual bar should not extend beyond 100%
-    display_percentage = min(
-        max(percentage_used, 0),
-        100
-    )
+    percentage_used = (total_expenses / monthly_budget) * 100
+    displayed_percentage = min(percentage_used, 100)
+    remaining_amount = monthly_budget - total_expenses
 
-    # Make sure output folder exists
-    output_path = Path(output_path)
+    output_folder = Path(output_folder)
+    output_folder.mkdir(parents=True, exist_ok=True)
+    image_path = output_folder / "monthly_budget_progress.png"
 
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    # Create figure
-    fig, ax = plt.subplots(
-        figsize=(8, 1)
-    )
-
-    # Transparent background
+    fig, ax = plt.subplots(figsize=(10, 1.2))
     fig.patch.set_alpha(0)
     ax.set_facecolor("none")
 
-    # --------------------------------------------------
-    # RED SPENT PORTION
-    # --------------------------------------------------
-
-    spent_bar = Rectangle(
-        (0, 0),
-        display_percentage,
-        1,
-        facecolor="red",
-        edgecolor="none"
-    )
-
-    ax.add_patch(spent_bar)
-
-    # --------------------------------------------------
-    # OUTER BORDER
-    # --------------------------------------------------
-
-    border = Rectangle(
-        (0, 0),
+    # Transparent complete bar with a visible border.
+    ax.barh(
+        0,
         100,
-        1,
+        height=0.48,
         facecolor="none",
-        edgecolor="black",
-        linewidth=2
+        edgecolor="#263238",
+        linewidth=2.5,
+        zorder=1,
     )
 
-    ax.add_patch(border)
+    # Red section indicates the percentage of budget already used.
+    ax.barh(
+        0,
+        displayed_percentage,
+        height=0.48,
+        color="#E53935",
+        edgecolor="none",
+        zorder=2,
+    )
 
-    # --------------------------------------------------
-    # GRAPH SETTINGS
-    # --------------------------------------------------
+    # Redraw the border above the filled section.
+    ax.barh(
+        0,
+        100,
+        height=0.48,
+        facecolor="none",
+        edgecolor="#263238",
+        linewidth=2.5,
+        zorder=3,
+    )
 
-    ax.set_xlim(0, 100)
-    ax.set_ylim(0, 1)
+    if displayed_percentage >= 25:
+        label_x = displayed_percentage / 2
+        label_color = "white"
+        alignment = "center"
+    else:
+        label_x = displayed_percentage + 3
+        label_color = "#263238"
+        alignment = "left"
 
+    ax.text(
+        label_x,
+        0,
+        f"{percentage_used:.1f}% used",
+        ha=alignment,
+        va="center",
+        fontsize=13,
+        fontweight="bold",
+        color=label_color,
+        zorder=4,
+    )
+
+    ax.set_xlim(-1, 101)
+    ax.set_ylim(-0.35, 0.35)
     ax.axis("off")
 
-    # Remove extra margins
-    fig.subplots_adjust(
-        left=0,
-        right=1,
-        top=1,
-        bottom=0
-    )
-
-    # --------------------------------------------------
-    # SAVE PNG
-    # --------------------------------------------------
-
+    fig.tight_layout()
     fig.savefig(
-        output_path,
+        image_path,
         dpi=150,
-        transparent=True,
         bbox_inches="tight",
-        pad_inches=0
+        transparent=True,
+        pad_inches=0.05,
     )
-
     plt.close(fig)
 
-    return str(output_path)
+    return {
+        "path": str(image_path),
+        "percentage_used": percentage_used,
+        "remaining_amount": remaining_amount,
+    }

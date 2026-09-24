@@ -1,216 +1,111 @@
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-from database import get_current_month_expenses
 
+def _as_datetime(value):
+    """Convert an SQLite timestamp value into a datetime object."""
 
-def get_month_range():
-    now = datetime.now()
+    if isinstance(value, datetime):
+        return value
 
-    month_start = datetime(
-        now.year,
-        now.month,
-        1
-    )
-
-    if now.month == 12:
-        next_month_start = datetime(
-            now.year + 1,
-            1,
-            1
-        )
-    else:
-        next_month_start = datetime(
-            now.year,
-            now.month + 1,
-            1
-        )
-
-    return now, month_start, next_month_start
+    return datetime.fromisoformat(str(value))
 
 
 def generate_live_expenditure_graph(
-    user_id,
-    username
+    transactions,
+    current_date,
+    output_folder,
 ):
-    """
-    Generate the cumulative expenditure graph
-    for the authenticated user for the current month.
-    """
+    """Create a cumulative expense graph from month start through today."""
 
-    now, month_start, next_month_start = get_month_range()
+    daily_totals = defaultdict(float)
 
-    # Get current-month expenses from database.py
-    transactions = get_current_month_expenses(
-        user_id,
-        month_start,
-        next_month_start
-    )
+    for created_at, _category_name, amount in transactions:
+        transaction_date = _as_datetime(created_at)
 
-    # Create every day from the 1st until today
-    daily_expenses = {
-        day: 0.0
-        for day in range(1, now.day + 1)
-    }
+        # Exclude any accidentally future-dated transaction.
+        if transaction_date.date() <= current_date.date():
+            daily_totals[transaction_date.day] += float(amount)
 
-    # Process expense transactions
-    for created_at, category_name, amount in transactions:
-
-        # SQLite may return the date as a string
-        if isinstance(created_at, str):
-            created_at = datetime.fromisoformat(
-                created_at
-            )
-
-        # Ignore accidentally future-dated transactions
-        if created_at.date() <= now.date():
-            daily_expenses[created_at.day] += float(
-                amount
-            )
-
-    days = list(
-        daily_expenses.keys()
-    )
-
-    daily_amounts = list(
-        daily_expenses.values()
-    )
-
-    # Calculate cumulative expenditure
-    cumulative_amounts = []
-
+    days = list(range(1, current_date.day + 1))
+    cumulative_expenses = []
     running_total = 0.0
 
-    for daily_amount in daily_amounts:
+    for day in days:
+        running_total += daily_totals.get(day, 0.0)
+        cumulative_expenses.append(running_total)
 
-        running_total += daily_amount
+    output_folder = Path(output_folder)
+    output_folder.mkdir(parents=True, exist_ok=True)
+    image_path = output_folder / "live_monthly_expenditure.png"
 
-        cumulative_amounts.append(
-            running_total
-        )
-
-    # Create graph output folder
-    graph_folder = (
-        Path("graphs")
-        / username
-        / now.strftime("%Y-%m")
-    )
-
-    graph_folder.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    graph_path = (
-        graph_folder
-        / "live_monthly_expenditure.png"
-    )
-
-    # --------------------------------------------------
-    # CREATE GRAPH
-    # --------------------------------------------------
-
-    fig, ax = plt.subplots(
-        figsize=(11, 6),
-        facecolor="#F4F7FB"
-    )
-
-    ax.set_facecolor(
-        "#F4F7FB"
-    )
+    fig, ax = plt.subplots(figsize=(11, 6), facecolor="#F7F9FC")
+    ax.set_facecolor("#F7F9FC")
 
     ax.plot(
         days,
-        cumulative_amounts,
-        color="#6C5CE7",
+        cumulative_expenses,
+        color="#6A4C93",
         linewidth=3,
         marker="o",
         markersize=6,
-        markerfacecolor="#FFD166",
-        markeredgecolor="#6C5CE7"
+        markerfacecolor="#FFCA3A",
+        markeredgecolor="#6A4C93",
     )
 
     ax.fill_between(
         days,
-        cumulative_amounts,
-        color="#A29BFE",
-        alpha=0.30
+        cumulative_expenses,
+        color="#B8A1D9",
+        alpha=0.35,
     )
 
     ax.set_title(
-        f"Live Expenditure — {now.strftime('%B %Y')}",
-        fontsize=18,
+        f"Live Expenditure — {current_date.strftime('%B %Y')}",
+        fontsize=17,
         fontweight="bold",
-        pad=15
+        pad=18,
     )
-
-    ax.set_xlabel(
-        "Day of the Month"
-    )
-
-    ax.set_ylabel(
-        "Total Expenditure Till Date"
-    )
-
+    ax.set_xlabel("Day of the Month")
+    ax.set_ylabel("Cumulative Expenditure")
     ax.set_xticks(days)
 
     ax.yaxis.set_major_formatter(
-        ticker.FuncFormatter(
-            lambda value, position:
-            f"₹{value:,.0f}"
-        )
+        ticker.FuncFormatter(lambda value, _position: f"₹{value:,.0f}")
     )
 
-    ax.grid(
-        linestyle="--",
-        alpha=0.30
-    )
+    ax.grid(linestyle="--", alpha=0.30)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
-    ax.spines["top"].set_visible(
-        False
-    )
-
-    ax.spines["right"].set_visible(
-        False
-    )
-
-    # Display final expenditure value
     if running_total > 0:
-
         ax.annotate(
             f"₹{running_total:,.0f}",
-            xy=(
-                days[-1],
-                cumulative_amounts[-1]
-            ),
-            xytext=(-50, 20),
+            xy=(days[-1], cumulative_expenses[-1]),
+            xytext=(-55, 20),
             textcoords="offset points",
-            fontsize=11,
             fontweight="bold",
-            color="#6C5CE7",
+            color="#6A4C93",
             arrowprops={
                 "arrowstyle": "->",
-                "color": "#6C5CE7"
-            }
+                "color": "#6A4C93",
+            },
         )
 
     fig.tight_layout()
-
     fig.savefig(
-        graph_path,
-        dpi=200,
+        image_path,
+        dpi=150,
         bbox_inches="tight",
-        facecolor=fig.get_facecolor()
+        facecolor=fig.get_facecolor(),
     )
-
     plt.close(fig)
 
     return {
-        "graph_path": str(graph_path),
-        "month": now.strftime("%B %Y"),
-        "up_to_date": now.strftime("%d-%m-%Y"),
-        "total_expenditure": running_total
+        "path": str(image_path),
+        "total_expenses": running_total,
     }
