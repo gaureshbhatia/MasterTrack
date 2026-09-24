@@ -8,56 +8,21 @@ Work split :
 
 ## Run the app
 
-1. Install and start MySQL on Ubuntu/Debian:
-
-```bash
-sudo apt update
-sudo apt install mysql-server
-sudo systemctl enable --now mysql
-```
-
-2. Create the application database and user:
-
-```bash
-sudo mysql
-```
-
-Run this SQL in the MySQL prompt, replacing `choose_a_password` with a real
-password:
-
-```sql
-CREATE DATABASE personal_finance;
-CREATE USER 'finance_app'@'localhost' IDENTIFIED BY 'choose_a_password';
-GRANT ALL PRIVILEGES ON personal_finance.* TO 'finance_app'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-3. Update `.streamlit/secrets.toml` with the same MySQL credentials:
-
-```toml
-[mysql]
-host = "localhost"
-port = 3306
-database = "personal_finance"
-user = "finance_app"
-password = "choose_a_password"
-```
-
-4. Install the Python dependencies:
+1. Install the Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-5. Start the app:
+2. Start the app:
 
 ```bash
 streamlit run app.py
 ```
 
-The app creates the MySQL `users`, `expense_categories`, and `expenses` tables
-automatically. It seeds a `test` user with the password `password` and these
+The app creates a local SQLite `users.db` database with the `users`,
+`expense_categories`, and `expenses` tables automatically. It seeds a `test`
+user with the password `password` and these
 stable expense category mappings:
 
 | Category ID | Category name |
@@ -81,5 +46,7 @@ set a budget. A saved budget can be zero or greater and can be updated during
 the month. The month reset occurs when the user first opens the app in the
 new month, using the server's local date and time.
 
-The previous SQLite `users.db` file is no longer used, and its data is not
-migrated.
+The database file is local to the project and is ignored by Git. Delete
+`users.db` to reset all local users, expenses, and budgets; it will be recreated
+with the default schema and test user the next time the app starts. Existing
+MySQL data is not migrated.

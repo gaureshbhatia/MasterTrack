@@ -57,7 +57,7 @@ def ensure_cookie_key():
 
 
 def load_credentials():
-	#Load the credentials from the MySQL database so that authenticator can read them.
+	#Load credentials from the SQLite database so that authenticator can read them.
 	connection = get_database_connection()
 	try:
 		cursor = connection.cursor()
@@ -249,8 +249,8 @@ def main():
 		st.title("Welcome to Personal Finance")
 		st.error(str(error))
 		st.info(
-			"Install and start MySQL, create the personal_finance database, "
-			"then restart Streamlit."
+			"The local users.db database could not be opened. Check the "
+			"application directory permissions, then restart Streamlit."
 		)
 		st.stop()
 
@@ -285,6 +285,8 @@ def main():
 
 		with st.sidebar:
 			authenticator.logout("Log out")
+		if not st.session_state.get("authentication_status"):
+			st.stop()
 		try:
 			_, month_start, _ = get_current_month_boundaries()
 			show_monthly_budget(st.session_state["username"], month_start)
