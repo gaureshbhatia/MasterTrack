@@ -5,6 +5,7 @@ venv/
 env/
 
 # Python cache and build files
+finance.db
 __pycache__/
 *.py[cod]
 *$py.class
