@@ -6,6 +6,15 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 from budget_loading_bar import generate_budget_loading_bar
+from chart_theme import (
+    BACKGROUND_COLOR,
+    EXPENSE_COLOR,
+    GRID_COLOR,
+    MUTED_TEXT_COLOR,
+    PRIMARY_COLOR,
+    SURFACE_COLOR,
+    TEXT_COLOR,
+)
 from database import get_current_month_budget, get_current_month_expenses
 from live_expenditure import generate_live_expenditure_graph
 
@@ -66,17 +75,18 @@ def generate_category_pie_chart(
     total_expenses = sum(expenses)
 
     colors = [
-        "#FF595E",
-        "#FFCA3A",
-        "#8AC926",
-        "#1982C4",
-        "#6A4C93",
-        "#FF70A6",
-        "#00B4D8",
-        "#F77F00",
+        PRIMARY_COLOR,
+        EXPENSE_COLOR,
+        "#64748B",
+        "#60A5FA",
+        "#F87171",
+        "#94A3B8",
+        "#2563EB",
+        "#B91C1C",
     ]
 
-    fig, ax = plt.subplots(figsize=(8, 6), facecolor="#F7F9FC")
+    fig, ax = plt.subplots(figsize=(8, 6), facecolor=BACKGROUND_COLOR)
+    ax.set_facecolor(BACKGROUND_COLOR)
 
     ax.pie(
         expenses,
@@ -85,13 +95,14 @@ def generate_category_pie_chart(
         autopct="%1.1f%%",
         startangle=90,
         pctdistance=0.78,
+        textprops={"color": TEXT_COLOR},
         wedgeprops={
-            "edgecolor": "white",
+            "edgecolor": BACKGROUND_COLOR,
             "linewidth": 2,
         },
     )
 
-    centre_circle = plt.Circle((0, 0), 0.50, color="#F7F9FC")
+    centre_circle = plt.Circle((0, 0), 0.50, color=BACKGROUND_COLOR)
     ax.add_artist(centre_circle)
 
     ax.text(
@@ -102,13 +113,14 @@ def generate_category_pie_chart(
         va="center",
         fontsize=15,
         fontweight="bold",
-        color="#333333",
+        color=TEXT_COLOR,
     )
 
     ax.set_title(
         "Expenses by Category",
         fontsize=17,
         fontweight="bold",
+        color=TEXT_COLOR,
         pad=18,
     )
 
@@ -134,7 +146,8 @@ def generate_budget_comparison_chart(
     if monthly_budget <= 0:
         return None
 
-    fig, ax = plt.subplots(figsize=(8, 6), facecolor="#F7F9FC")
+    fig, ax = plt.subplots(figsize=(8, 6), facecolor=BACKGROUND_COLOR)
+    ax.set_facecolor(SURFACE_COLOR)
 
     labels = ["Monthly Budget", "Spent Till Date"]
     values = [monthly_budget, total_expenses]
@@ -142,9 +155,9 @@ def generate_budget_comparison_chart(
     bars = ax.bar(
         labels,
         values,
-        color=["#1982C4", "#FF595E"],
+        color=[PRIMARY_COLOR, EXPENSE_COLOR],
         width=0.55,
-        edgecolor="white",
+        edgecolor=BACKGROUND_COLOR,
         linewidth=2,
     )
 
@@ -153,21 +166,24 @@ def generate_budget_comparison_chart(
         labels=[f"₹{value:,.0f}" for value in values],
         padding=5,
         fontweight="bold",
+        color=TEXT_COLOR,
     )
 
     ax.set_title(
         "Monthly Budget vs Expenditure",
         fontsize=17,
         fontweight="bold",
+        color=TEXT_COLOR,
         pad=18,
     )
-    ax.set_ylabel("Amount")
+    ax.set_ylabel("Amount", color=TEXT_COLOR)
+    ax.tick_params(colors=TEXT_COLOR)
     ax.yaxis.set_major_formatter(
         ticker.FuncFormatter(lambda value, _position: f"₹{value:,.0f}")
     )
-    ax.grid(axis="y", linestyle="--", alpha=0.30)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    ax.grid(axis="y", linestyle="--", color=GRID_COLOR, alpha=0.55)
+    for spine in ax.spines.values():
+        spine.set_color(MUTED_TEXT_COLOR)
 
     image_path = Path(output_folder) / "budget_vs_expenditure.png"
     fig.savefig(

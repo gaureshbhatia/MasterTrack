@@ -5,6 +5,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+from chart_theme import (
+    BACKGROUND_COLOR,
+    GRID_COLOR,
+    MUTED_TEXT_COLOR,
+    PRIMARY_COLOR,
+    SURFACE_COLOR,
+    TEXT_COLOR,
+)
+
 
 def _as_datetime(value):
     """Convert an SQLite timestamp value into a datetime object."""
@@ -43,44 +52,46 @@ def generate_live_expenditure_graph(
     output_folder.mkdir(parents=True, exist_ok=True)
     image_path = output_folder / "live_monthly_expenditure.png"
 
-    fig, ax = plt.subplots(figsize=(11, 6), facecolor="#F7F9FC")
-    ax.set_facecolor("#F7F9FC")
+    fig, ax = plt.subplots(figsize=(11, 6), facecolor=BACKGROUND_COLOR)
+    ax.set_facecolor(SURFACE_COLOR)
 
     ax.plot(
         days,
         cumulative_expenses,
-        color="#6A4C93",
+        color=PRIMARY_COLOR,
         linewidth=3,
         marker="o",
         markersize=6,
-        markerfacecolor="#FFCA3A",
-        markeredgecolor="#6A4C93",
+        markerfacecolor="#EF4444",
+        markeredgecolor=BACKGROUND_COLOR,
     )
 
     ax.fill_between(
         days,
         cumulative_expenses,
-        color="#B8A1D9",
-        alpha=0.35,
+        color=PRIMARY_COLOR,
+        alpha=0.22,
     )
 
     ax.set_title(
         f"Live Expenditure — {current_date.strftime('%B %Y')}",
         fontsize=17,
         fontweight="bold",
+        color=TEXT_COLOR,
         pad=18,
     )
-    ax.set_xlabel("Day of the Month")
-    ax.set_ylabel("Cumulative Expenditure")
+    ax.set_xlabel("Day of the Month", color=TEXT_COLOR)
+    ax.set_ylabel("Cumulative Expenditure", color=TEXT_COLOR)
+    ax.tick_params(colors=TEXT_COLOR)
     ax.set_xticks(days)
 
     ax.yaxis.set_major_formatter(
         ticker.FuncFormatter(lambda value, _position: f"₹{value:,.0f}")
     )
 
-    ax.grid(linestyle="--", alpha=0.30)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    ax.grid(linestyle="--", color=GRID_COLOR, alpha=0.55)
+    for spine in ax.spines.values():
+        spine.set_color(MUTED_TEXT_COLOR)
 
     if running_total > 0:
         ax.annotate(
@@ -89,10 +100,10 @@ def generate_live_expenditure_graph(
             xytext=(-55, 20),
             textcoords="offset points",
             fontweight="bold",
-            color="#6A4C93",
+            color=PRIMARY_COLOR,
             arrowprops={
                 "arrowstyle": "->",
-                "color": "#6A4C93",
+                "color": PRIMARY_COLOR,
             },
         )
 

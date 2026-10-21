@@ -277,32 +277,17 @@ def show_current_month_expenses(username):
 		)
 
 	st.subheader("Data visualized")
-	if monthly_budget <= 0 and not expenses:
-		st.info("No budget or spending has been recorded for this month.")
-
 	if monthly_budget > 0 and expenses:
 		visualization_result = generate_charts(user_id, username)
 		chart_paths = visualization_result["charts"]
+		st.image(chart_paths["line"])
+		first_row, second_row = st.columns(2)
+		first_row.image(chart_paths["bar"])
+		second_row.image(chart_paths["pie"])
 	else:
-		chart_paths = {
-			"bar": str(
-				PLACEHOLDER_CHARTS_FOLDER
-				/ "budget_vs_expenditure_placeholder.png"
-			),
-			"pie": str(
-				PLACEHOLDER_CHARTS_FOLDER
-				/ "category_expenses_placeholder.png"
-			),
-			"line": str(
-				PLACEHOLDER_CHARTS_FOLDER
-				/ "live_monthly_expenditure_placeholder.png"
-			),
-		}
-
-	first_row, second_row = st.columns(2)
-	first_row.image(chart_paths["bar"])
-	second_row.image(chart_paths["pie"])
-	st.image(chart_paths["line"])
+		st.info(
+			"Set a monthly budget and record spending to see visualizations."
+		)
 
 
 def main():

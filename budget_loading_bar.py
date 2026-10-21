@@ -2,6 +2,14 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from chart_theme import (
+    BACKGROUND_COLOR,
+    EXPENSE_COLOR,
+    MUTED_TEXT_COLOR,
+    SURFACE_COLOR,
+    TEXT_COLOR,
+)
+
 
 def generate_budget_loading_bar(
     total_expenses,
@@ -29,8 +37,8 @@ def generate_budget_loading_bar(
     image_path = output_folder / image_name
 
     fig, ax = plt.subplots(figsize=(10, 1.2))
-    fig.patch.set_alpha(0)
-    ax.set_facecolor("none")
+    fig.patch.set_facecolor(BACKGROUND_COLOR)
+    ax.set_facecolor(SURFACE_COLOR)
 
     # Transparent complete bar with a visible border.
     ax.barh(
@@ -38,7 +46,7 @@ def generate_budget_loading_bar(
         100,
         height=0.48,
         facecolor="none",
-        edgecolor="#263238",
+        edgecolor=MUTED_TEXT_COLOR,
         linewidth=2.5,
         zorder=1,
     )
@@ -48,7 +56,7 @@ def generate_budget_loading_bar(
             0,
             displayed_percentage,
             height=0.48,
-            color="#E53935",
+            color=EXPENSE_COLOR,
             edgecolor="none",
             zorder=2,
         )
@@ -59,24 +67,24 @@ def generate_budget_loading_bar(
         100,
         height=0.48,
         facecolor="none",
-        edgecolor="#263238",
+        edgecolor=MUTED_TEXT_COLOR,
         linewidth=2.5,
         zorder=3,
     )
 
     if budget_is_set and displayed_percentage >= 25:
         label_x = displayed_percentage / 2
-        label_color = "white"
+        label_color = TEXT_COLOR
         alignment = "center"
         label = f"{percentage_used:.1f}% used"
     elif budget_is_set:
         label_x = displayed_percentage + 3
-        label_color = "white"
+        label_color = TEXT_COLOR
         alignment = "left"
         label = f"{percentage_used:.1f}% used"
     else:
         label_x = 50
-        label_color = "white"
+        label_color = TEXT_COLOR
         alignment = "center"
         label = "Budget for this month has not been set"
 
@@ -101,7 +109,8 @@ def generate_budget_loading_bar(
         image_path,
         dpi=150,
         bbox_inches="tight",
-        transparent=True,
+        facecolor=BACKGROUND_COLOR,
+        transparent=False,
         pad_inches=0.05,
     )
     plt.close(fig)
