@@ -8,22 +8,25 @@ def generate_budget_loading_bar(
     monthly_budget,
     output_folder,
 ):
-    """Create a transparent, bordered budget-usage bar and return its PNG path."""
+    """Create a budget-usage bar or an empty placeholder if no budget is set."""
 
     total_expenses = float(total_expenses)
     monthly_budget = float(monthly_budget)
-
-    # In database.py, -1 means that no budget has been set.
-    if monthly_budget <= 0:
-        return None
-
-    percentage_used = (total_expenses / monthly_budget) * 100
-    displayed_percentage = min(percentage_used, 100)
-    remaining_amount = monthly_budget - total_expenses
+    budget_is_set = monthly_budget > 0
+    percentage_used = (
+        (total_expenses / monthly_budget) * 100 if budget_is_set else None
+    )
+    displayed_percentage = min(percentage_used, 100) if budget_is_set else 0
+    remaining_amount = monthly_budget - total_expenses if budget_is_set else None
 
     output_folder = Path(output_folder)
     output_folder.mkdir(parents=True, exist_ok=True)
-    image_path = output_folder / "monthly_budget_progress.png"
+    image_name = (
+        "monthly_budget_progress.png"
+        if budget_is_set
+        else "monthly_budget_progress_placeholder.png"
+    )
+    image_path = output_folder / image_name
 
     fig, ax = plt.subplots(figsize=(10, 1.2))
     fig.patch.set_alpha(0)
@@ -40,15 +43,15 @@ def generate_budget_loading_bar(
         zorder=1,
     )
 
-    # Red section indicates the percentage of budget already used.
-    ax.barh(
-        0,
-        displayed_percentage,
-        height=0.48,
-        color="#E53935",
-        edgecolor="none",
-        zorder=2,
-    )
+    if budget_is_set:
+        ax.barh(
+            0,
+            displayed_percentage,
+            height=0.48,
+            color="#E53935",
+            edgecolor="none",
+            zorder=2,
+        )
 
     # Redraw the border above the filled section.
     ax.barh(
@@ -61,19 +64,26 @@ def generate_budget_loading_bar(
         zorder=3,
     )
 
-    if displayed_percentage >= 25:
+    if budget_is_set and displayed_percentage >= 25:
         label_x = displayed_percentage / 2
         label_color = "white"
         alignment = "center"
-    else:
+        label = f"{percentage_used:.1f}% used"
+    elif budget_is_set:
         label_x = displayed_percentage + 3
-        label_color = "#263238"
+        label_color = "white"
         alignment = "left"
+        label = f"{percentage_used:.1f}% used"
+    else:
+        label_x = 50
+        label_color = "white"
+        alignment = "center"
+        label = "Budget for this month has not been set"
 
     ax.text(
         label_x,
         0,
-        f"{percentage_used:.1f}% used",
+        label,
         ha=alignment,
         va="center",
         fontsize=13,

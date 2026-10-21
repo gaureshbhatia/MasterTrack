@@ -179,6 +179,19 @@ def set_current_month_budget(user_id, month_start, budget_inr):
 	finally:
 		connection.close()
 
+
+def clear_user_spending_data(user_id):
+	"""Delete only this user's expenses and budgets."""
+	connection = get_database_connection()
+	try:
+		cursor = connection.cursor()
+		cursor.execute("DELETE FROM expenses WHERE user_id = ?", (user_id,))
+		cursor.execute("DELETE FROM budgets WHERE user_id = ?", (user_id,))
+		connection.commit()
+	finally:
+		connection.close()
+
+
 if __name__ == "__main__":
 	initialize_database()
 	print(f"Database initialized at {DATABASE}")

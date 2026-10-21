@@ -6,6 +6,7 @@ from pathlib import Path
 import streamlit as st
 import streamlit_authenticator as stauth
 
+from budget_loading_bar import generate_budget_loading_bar
 from genkeys import (
 	DatabaseConnectionError,
 	get_database_connection,
@@ -13,6 +14,7 @@ from genkeys import (
 )
 from database import (
 	add_expense,
+	clear_user_spending_data,
 	get_current_month_budget,
 	get_current_month_expenses,
 	get_expense_categories,
@@ -160,7 +162,7 @@ def show_expense_form(username):
 		except (DatabaseConnectionError, ValueError) as error:
 			st.error(str(error))
 		else:
-			st.success("Expense saved successfully.")
+			pass
 
 
 def get_current_month_boundaries():
@@ -223,6 +225,16 @@ def show_current_month_expenses(username):
 	expenses = get_current_month_expenses(
 		user_id, month_start, next_month_start
 	)
+	monthly_budget = get_current_month_budget(user_id, month_start)
+	total_expenses = sum(float(amount) for _, _, amount in expenses)
+	progress_result = generate_budget_loading_bar(
+		total_expenses,
+		monthly_budget,
+		Path("charts") / str(user_id),
+	)
+	st.subheader("Budget Spent")
+	if progress_result is not None:
+		st.image(progress_result["path"])
 	st.subheader(f"Spending for {now.strftime('%B %Y')}")
 
 	if not expenses:
@@ -287,6 +299,34 @@ def main():
 
 		with st.sidebar:
 			authenticator.logout("Log out")
+			st.space(470)
+			if st.button("Clear my spending data", key="clear_spending_data"):
+				st.session_state["confirm_clear_spending_data"] = True
+			if st.session_state.pop("spending_data_cleared", False):
+				st.success("Spending data cleared.")
+
+			if st.session_state.get("confirm_clear_spending_data", False):
+				st.warning(
+					"This permanently deletes all expenses and budgets for "
+					"your account. Your account will not be deleted."
+				)
+				confirm_col, cancel_col = st.columns(2)
+				if confirm_col.button(
+					"Confirm clear",
+					key="confirm_clear_spending_data_button",
+				):
+					clear_user_spending_data(
+						get_user_id(st.session_state["username"])
+					)
+					st.session_state["confirm_clear_spending_data"] = False
+					st.session_state["spending_data_cleared"] = True
+					st.rerun()
+				if cancel_col.button(
+					"Cancel",
+					key="cancel_clear_spending_data_button",
+				):
+					st.session_state["confirm_clear_spending_data"] = False
+					st.rerun()
 		if not st.session_state.get("authentication_status"):
 			st.stop()
 		try:
