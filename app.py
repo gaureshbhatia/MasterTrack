@@ -147,6 +147,7 @@ def show_signup_form():
 
 def show_expense_form(username):
 	#Render the initial save-only expense entry form.
+	st.space(20)
 	st.subheader("Add an expense")
 	category_options = get_expense_categories()
 	categories = {name: category_id for category_id, name in category_options}
@@ -257,9 +258,11 @@ def show_current_month_expenses(username):
 				/ "monthly_budget_progress_placeholder.png"
 			)
 		}
+	st.space(20)
 	st.subheader("Budget Spent")
 	if progress_result is not None:
 		st.image(progress_result["path"])
+	st.space(20)
 	st.subheader(f"Spending for {now.strftime('%B %Y')}")
 
 	if not expenses:
@@ -275,7 +278,7 @@ def show_current_month_expenses(username):
 				for created_at, category, amount in expenses
 			]
 		)
-
+	st.space(20)
 	st.subheader("Data visualized")
 	if monthly_budget > 0 and expenses:
 		visualization_result = generate_charts(user_id, username)
@@ -292,6 +295,23 @@ def show_current_month_expenses(username):
 
 def main():
 	st.set_page_config(page_title="Personal Finance", page_icon="$")
+	st.markdown(
+		"""
+		<style>
+		[data-testid="stHeading"] {
+			text-align: center;
+		}
+		[data-testid="stAlert"] {
+			justify-content: center;
+		}
+		[data-testid="stAlert"] [data-testid="stMarkdownContainer"] {
+			width: 100%;
+			text-align: center;
+		}
+		</style>
+		""",
+		unsafe_allow_html=True,
+	)
 
 	try:
 		initialize_database()
