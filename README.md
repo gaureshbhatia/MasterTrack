@@ -37,8 +37,11 @@ logins are remembered for 30 days. After logging in, users can save positive
 INR expenses with up to two decimal places. Each expense stores the logged-in
 user ID and category ID, while the `expense_categories` table explains which
 category name each ID represents. The authenticated main page shows the
-user's expenses for the current calendar month; broader history and
-visualizations will be added later.
+user's expenses for the current calendar month and visualizations when both a
+monthly budget and spending data are available. Live chart images are written
+to `charts/current session/` and removed when the user logs out. When chart
+data is incomplete, the app displays the placeholder images in
+`charts/visualization_test_user/`.
 
 Each user also has a separate monthly budget. A new calendar month starts
 with an unset budget represented internally by `-1`; the app asks whether to

@@ -10,6 +10,10 @@ from database import get_current_month_budget, get_current_month_expenses
 from live_expenditure import generate_live_expenditure_graph
 
 
+CURRENT_SESSION_CHARTS_FOLDER = Path("charts") / "current session"
+PLACEHOLDER_CHARTS_FOLDER = Path("charts") / "visualization_test_user"
+
+
 def get_month_range(current_date=None):
     """Return now, the first day of this month, and the first day of next month."""
 
@@ -198,11 +202,7 @@ def generate_charts(user_id, username):
         for _created_at, _category_name, amount in transactions
     )
 
-    output_folder = (
-        Path("charts")
-        / str(username)
-        / current_date.strftime("%Y-%m")
-    )
+    output_folder = CURRENT_SESSION_CHARTS_FOLDER
     output_folder.mkdir(parents=True, exist_ok=True)
 
     chart_paths = {}

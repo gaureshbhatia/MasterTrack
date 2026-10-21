@@ -22,6 +22,23 @@ from database import (
 	initialize_database,
 	set_current_month_budget,
 )
+from visualization import (
+	CURRENT_SESSION_CHARTS_FOLDER,
+	PLACEHOLDER_CHARTS_FOLDER,
+	generate_charts,
+)
+
+
+def clear_current_session_images():
+	"""Remove generated images from the shared current-session folder."""
+
+	if not CURRENT_SESSION_CHARTS_FOLDER.is_dir():
+		return
+
+	image_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+	for image_path in CURRENT_SESSION_CHARTS_FOLDER.iterdir():
+		if image_path.is_file() and image_path.suffix.lower() in image_extensions:
+			image_path.unlink()
 
 
 def ensure_cookie_key():
@@ -227,11 +244,19 @@ def show_current_month_expenses(username):
 	)
 	monthly_budget = get_current_month_budget(user_id, month_start)
 	total_expenses = sum(float(amount) for _, _, amount in expenses)
-	progress_result = generate_budget_loading_bar(
-		total_expenses,
-		monthly_budget,
-		Path("charts") / str(user_id),
-	)
+	if monthly_budget > 0:
+		progress_result = generate_budget_loading_bar(
+			total_expenses,
+			monthly_budget,
+			CURRENT_SESSION_CHARTS_FOLDER,
+		)
+	else:
+		progress_result = {
+			"path": str(
+				PLACEHOLDER_CHARTS_FOLDER
+				/ "monthly_budget_progress_placeholder.png"
+			)
+		}
 	st.subheader("Budget Spent")
 	if progress_result is not None:
 		st.image(progress_result["path"])
@@ -239,18 +264,45 @@ def show_current_month_expenses(username):
 
 	if not expenses:
 		st.info("No expenses recorded this month.")
-		return
+	else:
+		st.table(
+			[
+				{
+					"Amount (INR)": f"{amount:.2f}",
+					"Category": category,
+					"Date": created_at.strftime("%Y-%m-%d %H:%M"),
+				}
+				for created_at, category, amount in expenses
+			]
+		)
 
-	st.table(
-		[
-			{	
-				"Amount (INR)": f"{amount:.2f}",
-				"Category": category,
-				"Date": created_at.strftime("%Y-%m-%d %H:%M"),
-			}
-			for created_at, category, amount in expenses
-		]
-	)
+	st.subheader("Data visualized")
+	if monthly_budget <= 0 and not expenses:
+		st.info("No budget or spending has been recorded for this month.")
+
+	if monthly_budget > 0 and expenses:
+		visualization_result = generate_charts(user_id, username)
+		chart_paths = visualization_result["charts"]
+	else:
+		chart_paths = {
+			"bar": str(
+				PLACEHOLDER_CHARTS_FOLDER
+				/ "budget_vs_expenditure_placeholder.png"
+			),
+			"pie": str(
+				PLACEHOLDER_CHARTS_FOLDER
+				/ "category_expenses_placeholder.png"
+			),
+			"line": str(
+				PLACEHOLDER_CHARTS_FOLDER
+				/ "live_monthly_expenditure_placeholder.png"
+			),
+		}
+
+	first_row, second_row = st.columns(2)
+	first_row.image(chart_paths["bar"])
+	second_row.image(chart_paths["pie"])
+	st.image(chart_paths["line"])
 
 
 def main():
@@ -299,6 +351,10 @@ def main():
 
 		with st.sidebar:
 			authenticator.logout("Log out")
+			if not st.session_state.get("authentication_status"):
+				clear_current_session_images()
+				st.session_state.pop("current_session_visualization_user", None)
+				st.stop()
 			st.space(470)
 			if st.button("Clear my spending data", key="clear_spending_data"):
 				st.session_state["confirm_clear_spending_data"] = True
@@ -318,6 +374,7 @@ def main():
 					clear_user_spending_data(
 						get_user_id(st.session_state["username"])
 					)
+					clear_current_session_images()
 					st.session_state["confirm_clear_spending_data"] = False
 					st.session_state["spending_data_cleared"] = True
 					st.rerun()
@@ -327,13 +384,16 @@ def main():
 				):
 					st.session_state["confirm_clear_spending_data"] = False
 					st.rerun()
-		if not st.session_state.get("authentication_status"):
-			st.stop()
+		username = st.session_state["username"]
+		if st.session_state.get("current_session_visualization_user") != username:
+			clear_current_session_images()
+			CURRENT_SESSION_CHARTS_FOLDER.mkdir(parents=True, exist_ok=True)
+			st.session_state["current_session_visualization_user"] = username
 		try:
 			_, month_start, _ = get_current_month_boundaries()
-			show_monthly_budget(st.session_state["username"], month_start)
-			show_expense_form(st.session_state["username"])
-			show_current_month_expenses(st.session_state["username"])
+			show_monthly_budget(username, month_start)
+			show_expense_form(username)
+			show_current_month_expenses(username)
 		except DatabaseConnectionError as error:
 			st.error(str(error))
 	elif st.session_state["auth_screen"] == "signup":
