@@ -29,6 +29,10 @@ __pycache__/
 *.svg
 *.pdf
 
+# Keep chart files tracked
+!charts/
+!charts/**
+
 # Keep project assets tracked
 !assets/
 !assets/**/*.png
