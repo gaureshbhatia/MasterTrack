@@ -294,7 +294,7 @@ def show_current_month_expenses(username):
 
 
 def main():
-	st.set_page_config(page_title="Personal Finance", page_icon="$")
+	st.set_page_config(page_title="MasterTrack", page_icon="$")
 	st.markdown(
 		"""
 		<style>
@@ -317,7 +317,7 @@ def main():
 		initialize_database()
 		credentials = load_credentials()
 	except DatabaseConnectionError as error:
-		st.title("Welcome to Personal Finance")
+		st.title("Welcome to MasterTrack")
 		st.error(str(error))
 		st.info(
 			"The local users.db database could not be opened. Check the "
@@ -325,7 +325,7 @@ def main():
 		)
 		st.stop()
 
-	st.title("Welcome to Personal Finance")
+	st.title("Welcome to MasterTrack")
 	st.session_state.setdefault("auth_screen", "login")
 
 	cookie_key = ensure_cookie_key()

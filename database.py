@@ -6,6 +6,23 @@ DATABASE = os.path.join(
 	os.path.dirname(os.path.abspath(__file__)),
 	"users.db",
 )
+EXPENSE_CATEGORIES = (
+	"Food",
+	"Transport",
+	"Housing",
+	"Utilities",
+	"Education",
+	"Healthcare",
+	"Shopping",
+	"Entertainment",
+	"Travel",
+	"EMI/Loans",
+	"Misc",
+)
+LEGACY_CATEGORY_ALIASES = {
+	"Housing/Maintenance": "Housing",
+	"Edu": "Education",
+}
 
 
 class DatabaseConnectionError(RuntimeError):
@@ -49,10 +66,6 @@ def initialize_database():
 			)
 			"""
 		)
-		cursor.executemany(
-			"INSERT OR IGNORE INTO expense_categories (name) VALUES (?)",
-			[("Type 1",), ("Type 2",), ("Type 3",), ("Type 4",)],
-		)
 		cursor.execute(
 			"""
 			CREATE TABLE IF NOT EXISTS expenses (
@@ -79,6 +92,37 @@ def initialize_database():
 			)
 			"""
 		)
+
+		cursor.execute("SELECT id, name FROM expense_categories")
+		existing_categories = cursor.fetchall()
+		cursor.executemany(
+			"INSERT OR IGNORE INTO expense_categories (name) VALUES (?)",
+			[(name,) for name in EXPENSE_CATEGORIES],
+		)
+		cursor.execute("SELECT id, name FROM expense_categories")
+		category_ids = {name: category_id for category_id, name in cursor.fetchall()}
+		legacy_type_categories = {
+			f"Type {number}": name
+			for number, name in enumerate(EXPENSE_CATEGORIES, start=1)
+		}
+
+		for category_id, name in existing_categories:
+			if name in EXPENSE_CATEGORIES:
+				continue
+
+			target_name = legacy_type_categories.get(
+				name,
+				LEGACY_CATEGORY_ALIASES.get(name, "Misc"),
+			)
+			cursor.execute(
+				"UPDATE expenses SET category_id = ? WHERE category_id = ?",
+				(category_ids[target_name], category_id),
+			)
+			cursor.execute(
+				"DELETE FROM expense_categories WHERE id = ?",
+				(category_id,),
+			)
+
 		connection.commit()
 	finally:
 		connection.close()
@@ -119,7 +163,11 @@ def get_expense_categories():
 	try:
 		cursor = connection.cursor()
 		cursor.execute("SELECT id, name FROM expense_categories ORDER BY id")
-		return cursor.fetchall()
+		categories = cursor.fetchall()
+		category_order = {
+			name: index for index, name in enumerate(EXPENSE_CATEGORIES)
+		}
+		return sorted(categories, key=lambda category: category_order[category[1]])
 	finally:
 		connection.close()
 
