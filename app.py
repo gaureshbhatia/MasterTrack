@@ -258,7 +258,7 @@ def show_current_month_expenses(username):
 				/ "monthly_budget_progress_placeholder.png"
 			)
 		}
-	st.space(10)
+	st.space(20)
 	st.subheader("Budget Spent")
 	if progress_result is not None:
 		st.image(progress_result["path"])
