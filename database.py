@@ -132,7 +132,7 @@ def get_user_id(username):
 	connection = get_database_connection()
 	try:
 		cursor = connection.cursor()
-		cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+		cursor.execute("SELECT id FROM users WHERE username = ? COLLATE NOCASE", (username,))
 		row = cursor.fetchone()
 	finally:
 		connection.close()

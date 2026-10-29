@@ -390,6 +390,17 @@ def main():
 					st.session_state["confirm_clear_spending_data"] = False
 					st.rerun()
 		username = st.session_state["username"]
+
+		try:
+			get_user_id(username)
+		except ValueError:
+			st.warning(
+				"Your saved login is no longer valid because this account was "
+				"not found. Please log out, then sign up or log in again."
+			)
+			
+			st.stop()
+
 		if st.session_state.get("current_session_visualization_user") != username:
 			clear_current_session_images()
 			CURRENT_SESSION_CHARTS_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -405,7 +416,7 @@ def main():
 		show_signup_form()
 	else:
 		show_login_screen(authenticator)
-	
+
 
 if __name__ == "__main__":
 	main()
